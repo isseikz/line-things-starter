@@ -3,6 +3,7 @@ const USER_SERVICE_UUID         = 'df9b6004-19ae-425c-abc8-59ed5317d2af'; // LED
 // User service characteristics
 const LED_CHARACTERISTIC_UUID   = 'E9062E71-9E62-4BC6-B0D3-35CDCD9B027B';
 const BTN_CHARACTERISTIC_UUID   = '62FBD229-6EDD-4D1A-B554-5C4E1BB29169';
+const MOTOR_CHARACTERISTIC_UUID  = '3b0c9a8e-220f-11e9-ab14-d663bd873d93';
 
 // PSDI Service UUID: Fixed value for Developer Trial
 const PSDI_SERVICE_UUID         = 'E625601E-9E55-4597-A598-76018A0D293D'; // Device ID
@@ -224,6 +225,16 @@ function liffGetUserService(service) {
     }).catch(error => {
         uiStatusError(makeErrorMsg(error), false);
     });
+
+    // Change Motor Input
+    service.getCharacteristic(MOTOR_CHARACTERISTIC_UUID).then(characteristic => {
+        window.motorCharacteristic = characteristic;
+
+        // Switch off by default
+        liffChangeMotorInput(0, 0);
+    }).catch(error => {
+        uiStatusError(makeErrorMsg(error), false);
+    });
 }
 
 function liffGetPSDIService(service) {
@@ -268,4 +279,24 @@ function liffToggleDeviceLedState(state) {
     ).catch(error => {
         uiStatusError(makeErrorMsg(error), false);
     });
+}
+
+
+// Called when the motor input value is changed
+function handlerMotorInputChanged(id, value){
+  document.getElementById(id).value = value;
+  liffChangeMotorInput(id, value);
+}
+
+function liffChangeMotorInput(id_motor, value){
+  // id_motor
+  //   0: all motors
+  //   1: motor #1
+  //   2: motor #2
+  //   ...
+  window.motorCharacteristic.writeValue(
+    new Uint8Array([id_motor, value])
+  ).catch(error => {
+    uiStatusError(makeErrorMsg(error), false);
+  })
 }
