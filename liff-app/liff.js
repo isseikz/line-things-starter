@@ -285,7 +285,7 @@ function liffToggleDeviceLedState(state) {
 // Called when the motor input value is changed
 function handlerMotorInputChanged(id, value){
   document.getElementById(id).value = value;
-  liffChangeMotorInput(id, value);
+  liffChangeMotorInput(id[6], value);
 }
 
 function liffChangeMotorInput(id_motor, value){
