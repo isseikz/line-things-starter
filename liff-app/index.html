@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <script src=" https://d.line-scdn.net/liff/1.0/sdk.js"></script>
     <script src="liff.js"></script>
+    <link rel="stylesheet" href="slider.css">
     <link rel="stylesheet" type="text/css" href="liff.css" />
   </head>
 
@@ -32,48 +33,37 @@
           <th class="device-info-cell device-info-key">PSDI</th>
           <td class="device-info-cell device-info-val" id="device-psdi"></td>
         </tr>
-        <tr>
-          <th class="device-info-cell device-info-key">Button state</th>
-          <td class="device-info-cell device-info-val">
-            <button id="btn-state" class="btn btn-state" disabled>Released</button>
-          </td>
-        </tr>
-        <tr>
-          <th class="device-info-cell device-info-key">Click count</th>
-          <td class="device-info-cell device-info-val" id="click-count">0</td>
-        </tr>
       </table>
       <hr />
-      <!-- Toggle LED -->
-      <p>
-        <button id="btn-led-toggle" class="btn btn-led-toggle" onclick="handlerToggleLed()">Switch LED ON</button>
-      </p>
-      <ul>
+      <!-- Motor Duty -->
+      <h3>Duty ratio</h3>
+      <p>You can change them by sliding bars below.</p>
+      <ol>
         <li>
           <div class="motor_input">
-            <input type="range" value="0" min="0" max="255" step="1" oninput="handlerMotorInputChanged('input_1', value)">
+            <input class="bar_input" type="range" value="0" min="0" max="255" step="1" oninput="handlerMotorInputChanged('input_1', value)">
             <output id="input_1"></output>
           </div>
         </li>
         <li>
           <div class="motor_input">
-            <input type="range" value="0" min="0" max="255" step="1" oninput="handlerMotorInputChanged('input_2', value)">
+            <input class="bar_input" type="range" value="0" min="0" max="255" step="1" oninput="handlerMotorInputChanged('input_2', value)">
             <output id="input_2"></output>
           </div>
         </li>
         <li>
           <div class="motor_input">
-            <input type="range" value="0" min="0" max="255" step="1" oninput="handlerMotorInputChanged('input_3', value)">
+            <input class="bar_input" type="range" value="0" min="0" max="255" step="1" oninput="handlerMotorInputChanged('input_3', value)">
             <output id="input_3"></output>
           </div>
         </li>
         <li>
           <div class="motor_input">
-            <input type="range" value="0" min="0" max="255" step="1" oninput="handlerMotorInputChanged('input_4', value)">
+            <input class="bar_input" type="range" value="0" min="0" max="255" step="1" oninput="handlerMotorInputChanged('input_4', value)">
             <output id="input_4"></output>
           </div>
         </li>
-      </ul>
+      </ol>
       <hr />
     </div>
   </body>
