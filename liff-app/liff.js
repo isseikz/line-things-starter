@@ -1,8 +1,6 @@
 // User service UUID: Change this to your generated service UUID
 const USER_SERVICE_UUID         = 'aaadfb25-d3f8-4290-b143-c9dc9a141a08'; // LED, Button
 // User service characteristics
-const LED_CHARACTERISTIC_UUID   = 'E9062E71-9E62-4BC6-B0D3-35CDCD9B027B';
-const BTN_CHARACTERISTIC_UUID   = '62FBD229-6EDD-4D1A-B554-5C4E1BB29169';
 const MOTOR_CHARACTERISTIC_UUID  = '3b0c9a8e-220f-11e9-ab14-d663bd873d93';
 
 // PSDI Service UUID: Fixed value for Developer Trial
@@ -21,50 +19,10 @@ window.onload = () => {
     initializeApp();
 };
 
-// ----------------- //
-// Handler functions //
-// ----------------- //
-
-function handlerToggleLed() {
-    ledState = !ledState;
-
-    uiToggleLedButton(ledState);
-    liffToggleDeviceLedState(ledState);
-}
-
 // ------------ //
 // UI functions //
 // ------------ //
 
-function uiToggleLedButton(state) {
-    const el = document.getElementById("btn-led-toggle");
-    el.innerText = state ? "Switch LED OFF" : "Switch LED ON";
-
-    if (state) {
-      el.classList.add("led-on");
-    } else {
-      el.classList.remove("led-on");
-    }
-}
-
-function uiCountPressButton() {
-    clickCount++;
-
-    const el = document.getElementById("click-count");
-    el.innerText = clickCount;
-}
-
-function uiToggleStateButton(pressed) {
-    const el = document.getElementById("btn-state");
-
-    if (pressed) {
-        el.classList.add("pressed");
-        el.innerText = "Pressed";
-    } else {
-        el.classList.remove("pressed");
-        el.innerText = "Released";
-    }
-}
 
 function uiToggleDeviceConnected(connected) {
     const elStatus = document.getElementById("status");
@@ -194,9 +152,6 @@ function liffConnectToDevice(device) {
 
             // Reset LED state
             ledState = false;
-            // Reset UI elements
-            uiToggleLedButton(false);
-            uiToggleStateButton(false);
 
             // Try to reconnect
             initializeLiff();
@@ -209,23 +164,6 @@ function liffConnectToDevice(device) {
 }
 
 function liffGetUserService(service) {
-    // Button pressed state
-    service.getCharacteristic(BTN_CHARACTERISTIC_UUID).then(characteristic => {
-        liffGetButtonStateCharacteristic(characteristic);
-    }).catch(error => {
-        uiStatusError(makeErrorMsg(error), false);
-    });
-
-    // Toggle LED
-    service.getCharacteristic(LED_CHARACTERISTIC_UUID).then(characteristic => {
-        window.ledCharacteristic = characteristic;
-
-        // Switch off by default
-        liffToggleDeviceLedState(false);
-    }).catch(error => {
-        uiStatusError(makeErrorMsg(error), false);
-    });
-
     // Change Motor Input
     service.getCharacteristic(MOTOR_CHARACTERISTIC_UUID).then(characteristic => {
         window.motorCharacteristic = characteristic;
@@ -246,26 +184,6 @@ function liffGetPSDIService(service) {
         const psdi = new Uint8Array(value.buffer)
             .reduce((output, byte) => output + ("0" + byte.toString(16)).slice(-2), "");
         document.getElementById("device-psdi").innerText = psdi;
-    }).catch(error => {
-        uiStatusError(makeErrorMsg(error), false);
-    });
-}
-
-function liffGetButtonStateCharacteristic(characteristic) {
-    // Add notification hook for button state
-    // (Get notified when button state changes)
-    characteristic.startNotifications().then(() => {
-        characteristic.addEventListener('characteristicvaluechanged', e => {
-            const val = (new Uint8Array(e.target.value.buffer))[0];
-            if (val > 0) {
-                // press
-                uiToggleStateButton(true);
-            } else {
-                // release
-                uiToggleStateButton(false);
-                uiCountPressButton();
-            }
-        });
     }).catch(error => {
         uiStatusError(makeErrorMsg(error), false);
     });
