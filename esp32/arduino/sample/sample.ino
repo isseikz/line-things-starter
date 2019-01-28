@@ -4,12 +4,13 @@
 #include <BLE2902.h>
 
 // Device Name: Maximum 30 bytes
-#define DEVICE_NAME "LINE Things Trial ESP32"
+#define DEVICE_NAME "LIFF DRONE ver1.0"
 
 // User service UUID: Change this to your generated service UUID
-#define USER_SERVICE_UUID "91E4E176-D0B9-464D-9FE4-52EE3E9F1552"
+#define USER_SERVICE_UUID "aaadfb25-d3f8-4290-b143-c9dc9a141a08"
 // User service characteristics
 #define WRITE_CHARACTERISTIC_UUID "E9062E71-9E62-4BC6-B0D3-35CDCD9B027B"
+#define MOTOR_CHARACTERISTIC_UUID "3b0c9a8e-220f-11e9-ab14-d663bd873d93"
 #define NOTIFY_CHARACTERISTIC_UUID "62FBD229-6EDD-4D1A-B554-5C4E1BB29169"
 
 // PSDI Service UUID: Fixed value for Developer Trial
@@ -32,6 +33,15 @@ bool oldDeviceConnected = false;
 
 volatile int btnAction = 0;
 
+//additional definition
+#define ARRAY_LENGTH(array) (sizeof(array)/sizeof(array[0]))
+#define LEDC_TIMER_BIT 8
+#define LEDC_BASE_FREQ 50
+#define VALUE_MAX 255
+static char MOTOR_CH[4] = {1,2,3,4};
+static char MOTOR_MAP[4] = {26, 25, 33, 32};
+
+
 class serverCallbacks: public BLEServerCallbacks {
   void onConnect(BLEServer* pServer) {
    deviceConnected = true;
@@ -42,11 +52,32 @@ class serverCallbacks: public BLEServerCallbacks {
   }
 };
 
-class writeCallback: public BLECharacteristicCallbacks {
+//class writeCallback: public BLECharacteristicCallbacks {
+//  void onWrite(BLECharacteristic *bleWriteCharacteristic) {
+//    std::string value = bleWriteCharacteristic->getValue();
+//    if ((char)value[0] <= 1) {
+//      digitalWrite(LED1, (char)value[0]);
+//    }
+//  }
+//};
+
+class motorCallback: public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *bleWriteCharacteristic) {
     std::string value = bleWriteCharacteristic->getValue();
-    if ((char)value[0] <= 1) {
-      digitalWrite(LED1, (char)value[0]);
+
+    // value[0]: the id of motor, according to variable motor_map
+    // value[1]: input value for the motor(s) specified by the value[0]
+    if ((char)value[0] == 0) {
+      for (size_t i = 0; i < ARRAY_LENGTH(MOTOR_MAP); i++) {
+        ledcWrite(i, (char)value[1]);
+      }
+      Serial.print("All motors are set to ");
+      Serial.println((uint8_t)value[1]);
+    } else {
+      ledcWrite((uint8_t)value[0]-1, (char)value[1]);
+      Serial.print(MOTOR_MAP[(uint8_t)value[0]-1]);
+      Serial.print(" motor is set to ");
+      Serial.println((uint8_t)value[1]);
     }
   }
 };
@@ -54,9 +85,11 @@ class writeCallback: public BLECharacteristicCallbacks {
 void setup() {
   Serial.begin(115200);
 
-  pinMode(LED1, OUTPUT);
-  pinMode(BUTTON, INPUT_PULLUP);
-  attachInterrupt(BUTTON, buttonAction, CHANGE);
+  for (size_t i = 0; i < ARRAY_LENGTH(MOTOR_MAP); i++) {
+    pinMode(MOTOR_MAP[i], OUTPUT);
+    ledcSetup(i, LEDC_BASE_FREQ, LEDC_TIMER_BIT);
+    ledcAttachPin(MOTOR_MAP[i], i);
+  }
 
   BLEDevice::init("");
   BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT_NO_MITM);
@@ -73,15 +106,6 @@ void setup() {
 }
 
 void loop() {
-  uint8_t btnValue;
-
-  while (btnAction > 0 && deviceConnected) {
-    btnValue = !digitalRead(BUTTON);
-    btnAction = 0;
-    notifyCharacteristic->setValue(&btnValue, 1);
-    notifyCharacteristic->notify();
-    delay(20);
-  }
   // Disconnection
   if (!deviceConnected && oldDeviceConnected) {
     delay(500); // Wait for BLE Stack to be ready
@@ -101,10 +125,15 @@ void setupServices(void) {
 
   // Setup User Service
   userService = thingsServer->createService(USER_SERVICE_UUID);
-  // Create Characteristics for User Service
-  writeCharacteristic = userService->createCharacteristic(WRITE_CHARACTERISTIC_UUID, BLECharacteristic::PROPERTY_WRITE);
+//  // Create Characteristics for User Service
+//  writeCharacteristic = userService->createCharacteristic(WRITE_CHARACTERISTIC_UUID, BLECharacteristic::PROPERTY_WRITE);
+//  writeCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ_ENCRYPTED | ESP_GATT_PERM_WRITE_ENCRYPTED);
+//  writeCharacteristic->setCallbacks(new writeCallback());
+
+  // Create Characteristics for motor input Service
+  writeCharacteristic = userService->createCharacteristic(MOTOR_CHARACTERISTIC_UUID, BLECharacteristic::PROPERTY_WRITE);
   writeCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ_ENCRYPTED | ESP_GATT_PERM_WRITE_ENCRYPTED);
-  writeCharacteristic->setCallbacks(new writeCallback());
+  writeCharacteristic->setCallbacks(new motorCallback());
 
   notifyCharacteristic = userService->createCharacteristic(NOTIFY_CHARACTERISTIC_UUID, BLECharacteristic::PROPERTY_NOTIFY);
   notifyCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ_ENCRYPTED | ESP_GATT_PERM_WRITE_ENCRYPTED);
@@ -136,8 +165,4 @@ void startAdvertising(void) {
   thingsServer->getAdvertising()->addServiceUUID(userService->getUUID());
   thingsServer->getAdvertising()->setScanResponseData(scanResponseData);
   thingsServer->getAdvertising()->start();
-}
-
-void buttonAction() {
-  btnAction++;
 }
